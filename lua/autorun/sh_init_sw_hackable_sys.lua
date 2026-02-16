@@ -46,7 +46,7 @@ function ZKsSWHS:CheckUpdates()
 	end)
 end
 
-function ZKsSWHS.LoadDirectory(path)
+local function LoadDirectory(path)
 	local files, folders = file.Find(path .. "/*", "LUA")
 
 	for _, fileName in ipairs(files) do
@@ -54,14 +54,18 @@ function ZKsSWHS.LoadDirectory(path)
 
 		if CLIENT then
 			include(filePath)
+			print("[SWHS]: Included client file: " .. filePath)
 		else
 			if fileName:StartWith("cl_") then
 				AddCSLuaFile(filePath)
+				print("[SWHS]: Included client file: " .. filePath)
 			elseif fileName:StartWith("sh_") then
 				AddCSLuaFile(filePath)
 				include(filePath)
+				print("[SWHS]: Included shared file: " .. filePath)
 			else
 				include(filePath)
+				print("[SWHS]: Included server file: " .. filePath)
 			end
 		end
 	end
@@ -69,14 +73,13 @@ function ZKsSWHS.LoadDirectory(path)
 	return files, folders
 end
 
-function ZKsSWHS.LoadDirectoryRecursive(basePath)
-	local _, folders = ZKsSWHS.LoadDirectory(basePath)
+local function LoadDirectoryRecursive(basePath)
+	local _, folders = LoadDirectory(basePath)
 	for _, folderName in ipairs(folders) do
-		ZKsSWHS.LoadDirectoryRecursive(basePath .. "/" .. folderName)
+		print("[SWHS]: Loading folder: " .. folderName)
+		LoadDirectoryRecursive(basePath .. "/" .. folderName)
 	end
 end
-
-ZKsSWHS.LoadDirectoryRecursive("zks_swhs")
 
 local version = "v0.1"
 MsgC( "\n", Color( 255, 255, 255 ), "---------------------------------- \n" )
@@ -84,6 +87,8 @@ MsgC( Color( 180, 130, 245 ), "[Zaktak's SW Hacking System]\n" )
 MsgC( Color( 255, 255, 255 ), "Loading Files.......\n" )
 MsgC( Color( 255, 255, 255 ), "Version........ "..version.."\n" )
 MsgC( Color( 255, 255, 255 ), "---------------------------------- \n" )
+
+LoadDirectoryRecursive("zks_swhs")
 
 
 hook.Add( "InitPostEntity", "!!zks_swhs_checkupdates", function()
