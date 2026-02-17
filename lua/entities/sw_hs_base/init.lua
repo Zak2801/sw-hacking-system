@@ -26,6 +26,8 @@ function ENT:Initialize()
 
     self:SetState(0) -- Set initial state to Idle
     self:SetStage(0) -- Set initial stage to Not started
+    self:SetDetectionLevel(math.random(0, 5)) -- Set initial detection level
+    self:SetSignalStability(math.random(90, 100)) -- Set initial signal stability
 end
 
 -----------------------------------------------------------------------------

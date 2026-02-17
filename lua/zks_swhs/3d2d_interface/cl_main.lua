@@ -98,6 +98,35 @@ function UI.DrawStageBox(w, h, title, alpha_mul, scale_mul)
     draw.SimpleText(title or "Stage", "DermaDefaultBold", new_box_cx, new_box_cy, titleColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end
 
+function UI.DrawInfoBox(w, h, title, value, color, y_offset, alpha_mul, scale_mul)
+    scale_mul = scale_mul or 1
+    alpha_mul = alpha_mul or 1
+    local panel_cx, panel_cy = w / 2, h / 2
+    local orig_boxW, orig_boxH = w * 0.3, 40
+    local orig_x, orig_y = -w * 0.2, h * 0.1 + y_offset
+    local box_cx = orig_x + orig_boxW / 2
+    local box_cy = orig_y + orig_boxH / 2
+    local box_cx_rel = box_cx - panel_cx
+    local box_cy_rel = box_cy - panel_cy
+    local new_box_cx = panel_cx + box_cx_rel * scale_mul
+    local new_box_cy = panel_cy + box_cy_rel * scale_mul
+    local boxW, boxH = orig_boxW * scale_mul, orig_boxH * scale_mul
+    local x, y = new_box_cx - boxW / 2, new_box_cy - boxH / 2
+    -- Background
+    surface.SetDrawColor(UI.Colors.Background.r, UI.Colors.Background.g, UI.Colors.Background.b, UI.Colors.Background.a * alpha_mul)
+    surface.DrawRect(x, y, boxW, boxH)
+    -- Border of box
+    surface.SetDrawColor(UI.Colors.Border.r, UI.Colors.Border.g, UI.Colors.Border.b, UI.Colors.Border.a * alpha_mul)
+    surface.DrawOutlinedRect(x, y, boxW, boxH)
+    -- Title
+    local titleColor = Color(UI.Colors.Highlight.r, UI.Colors.Highlight.g, UI.Colors.Highlight.b, UI.Colors.Highlight.a * alpha_mul)
+    local font_size = math.max(1, math.floor(18 * scale_mul)) -- DermaLarge is ~24
+    draw.SimpleText(title, "DermaDefaultBold", new_box_cx - boxW * 0.25, new_box_cy, titleColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    -- Value
+    local value_color = color or Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
+    draw.SimpleText(value, "DermaDefaultBold", new_box_cx + boxW * 0.25, new_box_cy, value_color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end
+
 -----------------------------------------------------------------------------
 -- Draws the hologram UI
 -- @param width number The width of the drawing area
@@ -193,6 +222,28 @@ function UI.EntryPoint(self)
     if imgui.Entity3D2D(self, Vector(bMax.x + 5, -bMax.y - 2, bMax.z * 3), Angle(0, 90, 100), 0.1) then
         UI.DrawHologram(width, height, alpha_mul, scale_mul)
         UI.DrawStageBox(width, height, hackingStage and hackingStage.name or "Unknown Stage", alpha_mul, scale_mul)
+        --#region new - Refactor and add new boxes
+        local detectionLevel = self:GetDetectionLevel() -- 0-100
+        local signalStability = self:GetSignalStability() -- 0-100
+        -- Detection Level
+        local detection_color = Color(255, 0, 0)
+        if detectionLevel < 75 then
+            detection_color = Color(255, 255, 0)
+        end
+        if detectionLevel < 35 then
+            detection_color = Color(0, 255, 0)
+        end
+        UI.DrawInfoBox(width, height, "Detection", detectionLevel .. "%", detection_color, 70, alpha_mul, scale_mul)
+        -- Signal Stability
+        local signal_color = Color(0, 255, 0)
+        if signalStability < 75 then
+            signal_color = Color(255, 255, 0)
+        end
+        if signalStability < 35 then
+            signal_color = Color(255, 0, 0)
+        end
+        UI.DrawInfoBox(width, height, "Signal", signalStability .. "%", signal_color, 120, alpha_mul, scale_mul)
+        --#endregion
         local terminalColor = Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
         local font_size = math.max(1, math.floor(30 * scale_mul))
         local text_x = width / 2 + 0.1 * scale_mul
