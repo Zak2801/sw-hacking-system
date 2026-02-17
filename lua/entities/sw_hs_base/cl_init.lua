@@ -21,7 +21,6 @@ local g_HackStartTime = 0 -- The time when the hack started (used for lerping).
 local g_LerpDuration = 1.0 -- How long the camera transition should take in seconds.
 local g_StartPos = Vector(0, 0, 0) -- The initial camera position when hacking starts.
 local g_StartAngles = Angle(0, 0, 0) -- The initial camera angles when hacking starts.
-local ourMat = Material( "phoenix_storms/wire/pcb_green" )
 
 --===========================================================================--
 --      Networking
@@ -38,6 +37,7 @@ net.Receive("ZKS.SWHS.StartHack", function(len)
     g_HackingEnt = ent
     g_IsHacking = true
     g_HackStartTime = CurTime()
+    ZKsSWHS.UI.HackStartTime = g_HackStartTime
 
     -- Store the initial camera position and angles for the lerp transition.
     local ply = LocalPlayer()
@@ -63,8 +63,11 @@ local function EndHack()
     if IsValid(g_HackingEnt) then
         print("[ZKS.SWHS] Hack ended on entity: " .. tostring(g_HackingEnt))
     end
+    
     g_IsHacking = false
     g_HackingEnt = nil
+    ZKsSWHS.UI.HackStartTime = nil
+    ZKsSWHS.UI.CurrentStage = -1
 end
 
 -----------------------------------------------------------------------------
@@ -119,6 +122,8 @@ end
 function ENT:DrawTranslucent(flags)
     self:Draw(flags)
     if not g_IsHacking then return end
+    if g_HackingEnt ~= self then return end
+
     ZKsSWHS.UI = ZKsSWHS.UI or {}
     ZKsSWHS.UI.EntryPoint(self)
 end

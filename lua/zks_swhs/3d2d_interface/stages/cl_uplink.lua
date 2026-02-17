@@ -39,24 +39,24 @@ STAGE.Init = function(self)
     }
 end
 
+-- Colors
+local color_target = Color(0, 255, 0, 100)
+local color_text = Color(200, 255, 200)
+local color_highlight = Color(255, 255, 0)
+local color_bg = Color(0, 0, 0, 150)
+
 -----------------------------------------------------------------------------
 -- Draws the Establish Unplink stage
 -- @param self table The entity
 -----------------------------------------------------------------------------
-STAGE.Draw = function(self)
+STAGE.Draw = function(self, w, h)
     if not self.TargetWave then return end
 
     -- Drawing area
-    local width = 800
-    local centerX = 500
-    local yCenter = 350
-    local segments = 150
-
-    -- Colors
-    local color_target = Color(0, 255, 0, 100)
-    local color_text = Color(200, 255, 200)
-    local color_highlight = Color(255, 255, 0)
-    local color_bg = Color(0, 0, 0, 150)
+    local width = w * 0.5
+    local centerX = w / 2
+    local yCenter = h * 0.3
+    local segments = 100
 
 
     local function DrawThickLine(x1, y1, x2, y2, thickness, color)
@@ -123,7 +123,7 @@ STAGE.Draw = function(self)
 
 
     -- Draw UI Text
-    local textY = 500
+    local textY = h * 0.5
     for i=1, 3 do
         local name = self.ParamNames[i]
         local key = self.ParamKeys[i]
@@ -132,14 +132,14 @@ STAGE.Draw = function(self)
         
         local textColor = (self.EditingParam == i) and color_highlight or color_text
 
-        draw.SimpleText(name, "DermaLarge", centerX - 200, textY, textColor, TEXT_ALIGN_CENTER)
-        draw.SimpleText(string.format("%.2f", target_val), "DermaLarge", centerX, textY, color_text, TEXT_ALIGN_CENTER)
-        draw.SimpleText(string.format("%.2f", player_val), "DermaLarge", centerX + 200, textY, textColor, TEXT_ALIGN_CENTER)
+        draw.SimpleText(name, "DermaDefault", centerX - 200, textY, textColor, TEXT_ALIGN_CENTER)
+        draw.SimpleText(string.format("%.2f", target_val), "DermaDefault", centerX, textY, color_text, TEXT_ALIGN_CENTER)
+        draw.SimpleText(string.format("%.2f", player_val), "DermaDefault", centerX + 200, textY, textColor, TEXT_ALIGN_CENTER)
         textY = textY + 40
     end
-    draw.SimpleText("TARGET", "DermaLarge", centerX, 460, color_text, TEXT_ALIGN_CENTER)
-    draw.SimpleText("CURRENT", "DermaLarge", centerX + 200, 460, color_text, TEXT_ALIGN_CENTER)
-    draw.SimpleText("[LEFT SHIFT] to change param, [UP/DOWN] to adjust", "DermaLarge", centerX, 720, color_text, TEXT_ALIGN_CENTER)
+    draw.SimpleText("TARGET", "DermaDefault", centerX, textY, color_text, TEXT_ALIGN_CENTER)
+    draw.SimpleText("CURRENT", "DermaDefault", centerX + 200, textY, color_text, TEXT_ALIGN_CENTER)
+    draw.SimpleText("[LEFT SHIFT] to change param, [UP/DOWN] to adjust", "DermaDefault", centerX, textY + 30, color_text, TEXT_ALIGN_CENTER)
 
 
     -- Handle Input

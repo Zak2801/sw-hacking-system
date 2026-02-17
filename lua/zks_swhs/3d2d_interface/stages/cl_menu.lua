@@ -11,23 +11,30 @@ local STAGE = {}
 STAGE.ID = 0
 STAGE.Name = "Main Menu"
 
+
 -----------------------------------------------------------------------------
 -- Initializes the Main Menu stage
 -- @param self table The entity
 -----------------------------------------------------------------------------
-STAGE.Init = function(self)
-    self.Completed = false
+STAGE.Init = function(ent)
+    STAGE.init = CurTime()
+    STAGE.Completed = false
 end
 
 -----------------------------------------------------------------------------
 -- Draws the Main Menu stage
 -- @param self table The entity
 -----------------------------------------------------------------------------
-STAGE.Draw = function(self, w, h)
-    local btnWidth, btnHeight = w / 4, 50
-    local wasPressed = imgui.xTextButton("Start Breach", "DermaLarge", w / 2 - btnWidth / 2, h / 2 - btnHeight / 2, btnWidth, btnHeight, 3)
+STAGE.Draw = function(ent, w, h)
+    local timeSinceInit = CurTime() - (STAGE.init or 0)
+    local animDuration = 0.3
+    local alpha_mul = math.Clamp(timeSinceInit / animDuration, 0, 1)
+    local btnWidth, btnHeight = w / 4 * alpha_mul, 50 * alpha_mul
+
+    local terminalColor = Color(ZKsSWHS.UI.Colors.Highlight.r, ZKsSWHS.UI.Colors.Highlight.g, ZKsSWHS.UI.Colors.Highlight.b, ZKsSWHS.UI.Colors.Highlight.a * alpha_mul)
+    local wasPressed = imgui.xTextButton("Start Breach", "DermaLarge", w / 2 - btnWidth / 2, h / 2 - btnHeight / 2, btnWidth, btnHeight, 3, terminalColor, ZKsSWHS.UI.Colors.Highlight_hover)
     if wasPressed then
-        self:SetStage(self:GetStage() + 1)
+        ent:SetStage(ent:GetStage() + 2)
     end
 end
 
