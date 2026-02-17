@@ -44,86 +44,12 @@ net.Receive("ZKS.SWHS.StartHack", function(len)
     g_StartPos = ply:EyePos()
     g_StartAngles = ply:EyeAngles()
 
-    -- Restore player movement by removing the hook.
-    hook.Remove("CreateMove", "ZKS.SWHS.FreezePlayer")
-
     print("[ZKS.SWHS] Hack started on entity: " .. tostring(ent))
-
-    -----------------------------------------------------------------------------
-    -- @name ZKS.SWHS.FreezePlayer
-    -- @hook CreateMove
-    -- @brief Prevents the player from moving or using items while hacking.
-    -----------------------------------------------------------------------------
-    hook.Add("CreateMove", "ZKS.SWHS.FreezePlayer", function(cmd)
-        if not g_IsHacking then return end
-
-        -- Block movement and actions.
-        cmd:ClearMovement()
-        cmd:RemoveKey(IN_ATTACK)
-        cmd:RemoveKey(IN_ATTACK2)
-    end)
 end)
 
 --===========================================================================--
 --      Hooks
 --===========================================================================--
-
------------------------------------------------------------------------------
--- @name ZKS.SWHS.HackingView
--- @hook CalcView
--- @brief Overrides the player's camera to create the hacking view.
---        Lerps the camera from its original position to a target position
---        above the hacked entity.
--- @param ply Player The local player.
--- @param pos Vector The original view position.
--- @param angles Angle The original view angles.
--- @param fov number The original field of view.
--- @return table A view table to override the camera.
------------------------------------------------------------------------------
-hook.Add("CalcView", "ZKS.SWHS.HackingView", function(ply, pos, angles, fov)
-    if not g_IsHacking or not IsValid(g_HackingEnt) then return end
-
-    local frac = (CurTime() - g_HackStartTime) / g_LerpDuration
-    frac = math.Clamp(frac, 0, 1)
-
-    -- Define the camera's destination
-    local targetPos = g_HackingEnt:GetPos() + Vector(0, 0, 110) + g_HackingEnt:GetForward() * 70
-    local targetAngles = ply:EyeAngles()
-
-    -- Interpolate camera position and angles
-    local view = {}
-    view.origin = LerpVector(frac, g_StartPos, targetPos)
-    view.angles = LerpAngle(frac, g_StartAngles, targetAngles)
-    view.fov = fov
-
-    -- Store view for imgui
-    ZKsSWHS.HackingView = ZKsSWHS.HackingView or {}
-    ZKsSWHS.HackingView.view = view
-
-    return view
-end)
-
------------------------------------------------------------------------------
--- @name ZKS.SWHS.HideViewModel
--- @hook PreDrawViewModel
--- @brief Prevents the player's viewmodel from being drawn while hacking.
------------------------------------------------------------------------------
-hook.Add("PreDrawViewModel", "ZKS.SWHS.HideViewModel", function(vm, weapon, ply)
-    if g_IsHacking then
-        return true -- returning true prevents the viewmodel from drawing
-    end
-end)
-
------------------------------------------------------------------------------
--- @name ZKS.SWHS.HideHands
--- @hook PreDrawPlayerHands
--- @brief Prevents the player's hands from being drawn while hacking.
------------------------------------------------------------------------------
-hook.Add("PreDrawPlayerHands", "ZKS.SWHS.HideHands", function(hands, vm, ply)
-    if g_IsHacking then
-        return true
-    end
-end)
 
 
 -----------------------------------------------------------------------------
@@ -139,15 +65,6 @@ local function EndHack()
     end
     g_IsHacking = false
     g_HackingEnt = nil
-
-    -- Restore player movement by removing the hook.
-    hook.Remove("CreateMove", "ZKS.SWHS.FreezePlayer")
-
-    -- Reset the player's view angles when exiting the hack.
-    local ply = LocalPlayer()
-    if IsValid(ply) and g_StartAngles then
-        ply:SetEyeAngles(g_StartAngles)
-    end
 end
 
 -----------------------------------------------------------------------------

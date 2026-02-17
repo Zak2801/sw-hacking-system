@@ -23,8 +23,9 @@ end
 -- Draws the Main Menu stage
 -- @param self table The entity
 -----------------------------------------------------------------------------
-STAGE.Draw = function(self)
-    local wasPressed = imgui.xTextButton("Main Menu", "DermaLarge", 0, 0, 500, 500, 3)
+STAGE.Draw = function(self, w, h)
+    local btnWidth, btnHeight = w / 4, 50
+    local wasPressed = imgui.xTextButton("Start Breach", "DermaLarge", w / 2 - btnWidth / 2, h / 2 - btnHeight / 2, btnWidth, btnHeight, 3)
     if wasPressed then
         self:SetStage(self:GetStage() + 1)
     end
