@@ -18,9 +18,141 @@ local G_STAGES = {
     [5] = "Complete"
 }
 
-local CurrentStage = -1
-
 local UI = ZKsSWHS.UI or {}
+UI.CurrentStage = -1
+
+UI.Colors = {
+    Background = Color(0, 0, 0, 200),
+    Border = Color(65, 185, 215, 200),
+    Text = Color(200, 255, 200),
+    Highlight = Color(255, 130, 0),
+    Highlight_hover = Color(255, 130, 0, 100),
+}
+
+-----------------------------------------------------------------------------
+-- Draws an outlined circle since surface.DrawOutlinedCircle doesn't exist
+-- @param x number The center x coordinate
+-- @param y number The center y coordinate
+-- @param radius number The radius of the circle
+-- @param segments number The number of segments to use to draw the circle
+-----------------------------------------------------------------------------
+local function DrawOutlinedCircle(x, y, radius, segments)
+    segments = segments or 64
+    local angleStep = (2 * math.pi) / segments
+    local lastX = x + radius
+    local lastY = y
+
+    for i = 1, segments do
+        local angle = i * angleStep
+        local newX = x + radius * math.cos(angle)
+        local newY = y + radius * math.sin(angle)
+        surface.DrawLine(lastX, lastY, newX, newY)
+        lastX = newX
+        lastY = newY
+    end
+end
+
+-----------------------------------------------------------------------------
+-- Draws a filled circle
+-- @param x number The center x coordinate
+-- @param y number The center y coordinate
+-- @param radius number The radius of the circle
+-- @param segments number The number of segments to use to draw the circle
+-----------------------------------------------------------------------------
+local function DrawFilledCircle(x, y, radius, segments)
+    segments = segments or 64
+    local poly = {}
+    for i = 0, segments do
+        local ang = (i / segments) * 2 * math.pi
+        table.insert(poly, {
+            x = x + math.cos(ang) * radius,
+            y = y + math.sin(ang) * radius
+        })
+    end
+    surface.DrawPoly(poly)
+end
+
+function UI.DrawStageBox(w, h, title, alpha_mul, scale_mul)
+    scale_mul = scale_mul or 1
+    alpha_mul = alpha_mul or 1
+    local panel_cx, panel_cy = w / 2, h / 2
+    local orig_boxW, orig_boxH = w * 0.3, 60
+    local orig_x, orig_y = -w * 0.2, h * 0.1
+    local box_cx = orig_x + orig_boxW / 2
+    local box_cy = orig_y + orig_boxH / 2
+    local box_cx_rel = box_cx - panel_cx
+    local box_cy_rel = box_cy - panel_cy
+    local new_box_cx = panel_cx + box_cx_rel * scale_mul
+    local new_box_cy = panel_cy + box_cy_rel * scale_mul
+    local boxW, boxH = orig_boxW * scale_mul, orig_boxH * scale_mul
+    local x, y = new_box_cx - boxW / 2, new_box_cy - boxH / 2
+    -- Background
+    surface.SetDrawColor(UI.Colors.Background.r, UI.Colors.Background.g, UI.Colors.Background.b, UI.Colors.Background.a * alpha_mul)
+    surface.DrawRect(x, y, boxW, boxH)
+    -- Border of box
+    surface.SetDrawColor(UI.Colors.Border.r, UI.Colors.Border.g, UI.Colors.Border.b, UI.Colors.Border.a * alpha_mul)
+    surface.DrawOutlinedRect(x, y, boxW, boxH)
+    -- Title
+    local titleColor = Color(UI.Colors.Highlight.r, UI.Colors.Highlight.g, UI.Colors.Highlight.b, UI.Colors.Highlight.a * alpha_mul)
+    local font_size = math.max(1, math.floor(24 * scale_mul)) -- DermaLarge is ~24
+    draw.SimpleText(title or "Stage", "DermaDefaultBold", new_box_cx, new_box_cy, titleColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end
+
+-----------------------------------------------------------------------------
+-- Draws the hologram UI
+-- @param width number The width of the drawing area
+-- @param height number The height of the drawing area
+-----------------------------------------------------------------------------
+function UI.DrawHologram(width, height, alpha_mul, scale_mul)
+    scale_mul = scale_mul or 1
+    alpha_mul = alpha_mul or 1
+    local centerX, centerY = width / 2, height / 2
+    local radius = (math.min(width, height) / 2 - 20) * scale_mul
+    if radius < 1 then return end
+    local holoColor = Color(UI.Colors.Border.r, UI.Colors.Border.g, UI.Colors.Border.b, UI.Colors.Border.a * alpha_mul)
+    local holoColorFaded = Color(holoColor.r, holoColor.g, holoColor.b, 50 * alpha_mul)
+    local holoColorVeryFaded = Color(holoColor.r, holoColor.g, holoColor.b, 20 * alpha_mul)
+    -- Faded black background
+    surface.SetDrawColor(UI.Colors.Background.r, UI.Colors.Background.g, UI.Colors.Background.b, UI.Colors.Background.a * alpha_mul)
+    DrawFilledCircle(centerX, centerY, radius, 64)
+    -- Outer circle
+    surface.SetDrawColor(holoColor)
+    DrawOutlinedCircle(centerX, centerY, radius, 64)
+    -- Inner grid
+    surface.SetDrawColor(holoColorFaded)
+    local gridSize = 40
+    -- Vertical lines
+    for x = centerX - radius + gridSize, centerX + radius - gridSize, gridSize do
+        if radius > gridSize then
+            local halfChord = math.sqrt(radius ^ 2 - (x - centerX) ^ 2)
+            surface.DrawLine(x, centerY - halfChord, x, centerY + halfChord)
+        end
+    end
+    -- Horizontal lines
+    for y = centerY - radius + gridSize, centerY + radius - gridSize, gridSize do
+        if radius > gridSize then
+            local halfChord = math.sqrt(radius ^ 2 - (y - centerY) ^ 2)
+            surface.DrawLine(centerX - halfChord, y, centerX + halfChord, y)
+        end
+    end
+    -- Add some more details for the "hologram" feel
+    -- Concentric circles
+    surface.SetDrawColor(holoColorVeryFaded)
+    DrawOutlinedCircle(centerX, centerY, radius * 0.75, 64)
+    DrawOutlinedCircle(centerX, centerY, radius * 0.5, 64)
+    DrawOutlinedCircle(centerX, centerY, radius * 0.25, 64)
+    -- Scanline effect
+    surface.SetDrawColor(0, 0, 0, 80 * alpha_mul)
+    local scanlineOffset = (CurTime() * 7) % 4 -- 50 is speed, 4 is the step
+    for i = 0, height, 4 do
+        local yPos = i - scanlineOffset
+        -- check middle of scanline
+        local checkY = yPos + 1
+        if checkY < (centerY - radius) or checkY > (centerY + radius) then continue end
+        local halfChord = math.sqrt(radius ^ 2 - (checkY - centerY) ^ 2)
+        surface.DrawRect(centerX - halfChord, yPos, halfChord * 2, 2)
+    end
+end
 
 function UI.EntryPoint(self)
     if not imgui then
@@ -28,49 +160,49 @@ function UI.EntryPoint(self)
         return
     end
 
-    local width, height = 1000, 1000
+    local width, height = 700, 600
+    local rad = math.min(width, height) / 2 - 10
+    local bMin, bMax = self:GetCollisionBounds()
     local rows, cols = 10, 10
     local padding = 1
-
     local HackingStageInt = self:GetStage()
     local hackingStage = ZKsSWHS.UI.Stages:Get(HackingStageInt)
-
-    if HackingStageInt ~= CurrentStage then
+    if HackingStageInt ~= UI.CurrentStage then
         print("[ZKS.SWHS] Stage changed to: " .. (G_STAGES[HackingStageInt] or "Unknown") .. " (" .. HackingStageInt .. ")")
-        CurrentStage = HackingStageInt
+        UI.CurrentStage = HackingStageInt
         hackingStage = ZKsSWHS.UI.Stages:Get(HackingStageInt)
         if hackingStage and hackingStage.init then
-            print("[ZKS.SWHS] Initializing stage: " .. (G_STAGES[CurrentStage] or "Unknown"))
+            print("[ZKS.SWHS] Initializing stage: " .. (G_STAGES[UI.CurrentStage] or "Unknown"))
             hackingStage.init(self)
         end
     end
 
-    -- Draw a 3D2D panel attached to the entity.
-    if imgui.Entity3D2D(self, Vector(width * -0.05, height * -0.05, 35), Angle(0, 90, 0), 0.1) then
-
-        surface.SetDrawColor(150, 150, 150, 245)
-        surface.DrawRect(0, 0, width, height)
-
-        surface.SetDrawColor(5, 40, 40, 245)
-
-        local cellW = (width - (cols+1)*padding) / cols
-        local cellH = (height - (rows+1)*padding) / rows
-
-        for y = 1, rows do
-            for x = 1, cols do
-                local px = padding + (x-1) * (cellW + padding)
-                local py = padding + (y-1) * (cellH + padding)
-                surface.DrawRect(px, py, cellW, cellH)
-            end
+    local scale_mul = 1
+    local alpha_mul = 1
+    if ZKsSWHS.UI.HackStartTime then
+        local timeSinceStart = CurTime() - ZKsSWHS.UI.HackStartTime
+        local animDuration = 0.3
+        if timeSinceStart < animDuration then
+            local animProgress = math.Clamp(timeSinceStart / animDuration, 0, 1)
+            scale_mul = Lerp(animProgress, 0, 1)
+            alpha_mul = Lerp(animProgress, 0, 1)
         end
+    end
 
-        surface.SetDrawColor(0, 0, 0, 240)
-        local tWidth = width / 2 - cellW * 2 - padding * 2
-        surface.DrawRect(tWidth, padding, cellW * 4 + padding * 4, cellH + padding * 2)
-        draw.SimpleText(G_STAGES[self:GetStage()] or "Unknown Stage", "DermaLarge", tWidth + cellW * 2 + padding * 2, padding + cellH / 2 + padding, Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-        
-        if hackingStage and hackingStage.draw then
-            hackingStage.draw(self)
+    -- Draw a 3D2D panel attached to the entity.
+    if imgui.Entity3D2D(self, Vector(bMax.x + 5, -bMax.y - 2, bMax.z * 3), Angle(0, 90, 100), 0.1) then
+        UI.DrawHologram(width, height, alpha_mul, scale_mul)
+        UI.DrawStageBox(width, height, hackingStage and hackingStage.name or "Unknown Stage", alpha_mul, scale_mul)
+        local terminalColor = Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
+        local font_size = math.max(1, math.floor(30 * scale_mul))
+        local text_x = width / 2 + 0.1 * scale_mul
+        local text_y = height / 2 + (40 - height / 2) * scale_mul
+        draw.SimpleText("Terminal", "DermaDefaultBold", text_x, text_y, terminalColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+
+        if self.CurrentMinigame and self.CurrentMinigame.Draw then
+            self.CurrentMinigame:Draw(self, width, height)
+        elseif hackingStage and hackingStage.draw then
+            hackingStage.draw(self, width, height)
         end
 
         if hackingStage and hackingStage.Completed then
@@ -78,7 +210,6 @@ function UI.EntryPoint(self)
                 self:SetStage(self:GetStage() + 1)
             end
         end
-
         imgui.End3D2D()
     end
 end
