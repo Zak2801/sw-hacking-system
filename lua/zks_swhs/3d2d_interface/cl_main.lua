@@ -20,6 +20,7 @@ local G_STAGES = {
 
 local UI = ZKsSWHS.UI or {}
 UI.CurrentStage = -1
+UI.InfoPanelText = ""
 
 UI.Colors = {
     Background = Color(0, 0, 0, 200),
@@ -70,6 +71,56 @@ local function DrawFilledCircle(x, y, radius, segments)
         })
     end
     surface.DrawPoly(poly)
+end
+
+-----------------------------------------------------------------------------
+-- Draws a text with wrapping
+-- @param text string The text to draw
+-- @param font string The font to use
+-- @param x number The x coordinate
+-- @param y number The y coordinate
+-- @param color Color The color of the text
+-- @param xalign number The horizontal alignment
+-- @param yalign number The vertical alignment
+-- @param wrapWidth number The width to wrap the text at
+-----------------------------------------------------------------------------
+local function DrawWrappedText(text, font, x, y, color, xalign, yalign, wrapWidth)
+    surface.SetFont(font)
+    local lines = {}
+    local currentLine = ""
+    local currentWidth = 0
+    local spaceWidth = surface.GetTextSize(" ")
+
+    for word in string.gmatch(text, "[^%s]+") do
+        local wordWidth = surface.GetTextSize(word)
+        if currentWidth + (currentLine == "" and 0 or spaceWidth) + wordWidth > wrapWidth then
+            table.insert(lines, currentLine)
+            currentLine = word
+            currentWidth = wordWidth
+        else
+            if currentLine ~= "" then
+                currentLine = currentLine .. " "
+                currentWidth = currentWidth + spaceWidth
+            end
+            currentLine = currentLine .. word
+            currentWidth = currentWidth + wordWidth
+        end
+    end
+    table.insert(lines, currentLine)
+
+    local fontHeight = draw.GetFontHeight(font)
+    local totalHeight = #lines * fontHeight
+
+    local startY = y
+    if yalign == TEXT_ALIGN_CENTER then
+        startY = y - totalHeight / 2
+    elseif yalign == TEXT_ALIGN_BOTTOM then
+        startY = y - totalHeight
+    end
+    
+    for i, line in ipairs(lines) do
+        draw.SimpleText(line, font, x, startY + (i - 1) * fontHeight, color, xalign, TEXT_ALIGN_TOP)
+    end
 end
 
 function UI.DrawStageBox(w, h, title, alpha_mul, scale_mul)
@@ -125,6 +176,41 @@ function UI.DrawInfoBox(w, h, title, value, color, y_offset, alpha_mul, scale_mu
     -- Value
     local value_color = color or Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
     draw.SimpleText(value, "DermaDefaultBold", new_box_cx + boxW * 0.25, new_box_cy, value_color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end
+
+function UI.DrawInfoPanel(w, h, alpha_mul, scale_mul)
+    scale_mul = scale_mul or 1
+    alpha_mul = alpha_mul or 1
+    local panel_cx, panel_cy = w / 2, h / 2
+    local orig_boxW, orig_boxH = w * 0.4, h * 0.5
+    local orig_x, orig_y = w * 0.3, h * 0.1
+    local box_cx = orig_x + orig_boxW * 2.1
+    local box_cy = orig_y + orig_boxH / 2
+    local box_cx_rel = box_cx - panel_cx
+    local box_cy_rel = box_cy - panel_cy
+    local new_box_cx = panel_cx + box_cx_rel * scale_mul
+    local new_box_cy = panel_cy + box_cy_rel * scale_mul
+    local boxW, boxH = orig_boxW * scale_mul, orig_boxH * scale_mul
+    local x, y = new_box_cx - boxW / 2, new_box_cy - boxH / 2
+
+    -- Background
+    surface.SetDrawColor(UI.Colors.Background.r, UI.Colors.Background.g, UI.Colors.Background.b, UI.Colors.Background.a * alpha_mul)
+    surface.DrawRect(x, y, boxW, boxH)
+
+    -- Border of box
+    surface.SetDrawColor(UI.Colors.Border.r, UI.Colors.Border.g, UI.Colors.Border.b, UI.Colors.Border.a * alpha_mul)
+    surface.DrawOutlinedRect(x, y, boxW, boxH)
+
+    -- Title
+    local titleColor = Color(UI.Colors.Highlight.r, UI.Colors.Highlight.g, UI.Colors.Highlight.b, UI.Colors.Highlight.a * alpha_mul)
+    local font_size = math.max(1, math.floor(24 * scale_mul)) -- DermaLarge is ~24
+    draw.SimpleText("INFO:", "DermaDefaultBold", new_box_cx, y + 20 * scale_mul, titleColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+
+
+    -- Content
+    ZKsSWHS.UI.InfoPanelText = ZKsSWHS.UI.InfoPanelText or ""
+    local text_color = Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
+    DrawWrappedText(ZKsSWHS.UI.InfoPanelText, "DermaDefault", x + 10 * scale_mul, y + 50 * scale_mul, text_color, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, boxW - 20 * scale_mul)
 end
 
 -----------------------------------------------------------------------------
@@ -222,7 +308,7 @@ function UI.EntryPoint(self)
     if imgui.Entity3D2D(self, Vector(bMax.x + 5, -bMax.y - 2, bMax.z * 3), Angle(0, 90, 100), 0.1) then
         UI.DrawHologram(width, height, alpha_mul, scale_mul)
         UI.DrawStageBox(width, height, hackingStage and hackingStage.name or "Unknown Stage", alpha_mul, scale_mul)
-        --#region new - Refactor and add new boxes
+
         local detectionLevel = self:GetDetectionLevel() -- 0-100
         local signalStability = self:GetSignalStability() -- 0-100
         -- Detection Level
@@ -243,7 +329,8 @@ function UI.EntryPoint(self)
             signal_color = Color(255, 0, 0)
         end
         UI.DrawInfoBox(width, height, "Signal", signalStability .. "%", signal_color, 120, alpha_mul, scale_mul)
-        --#endregion
+
+        UI.DrawInfoPanel(width, height, alpha_mul, scale_mul)
         local terminalColor = Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
         local font_size = math.max(1, math.floor(30 * scale_mul))
         local text_x = width / 2 + 0.1 * scale_mul
