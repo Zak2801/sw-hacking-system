@@ -15,7 +15,7 @@ util.AddNetworkString("ZKS.SWHS.StartHack")
 -- @return nil
 -----------------------------------------------------------------------------
 function ENT:Initialize()
-    self:SetModel("models/props_c17/furnitureStove001a.mdl")
+    self:SetModel("models/props_silo/consolepanelloadingbay.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)

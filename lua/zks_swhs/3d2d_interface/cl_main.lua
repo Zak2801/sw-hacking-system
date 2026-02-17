@@ -46,11 +46,7 @@ function UI.EntryPoint(self)
     end
 
     -- Draw a 3D2D panel attached to the entity.
-    if imgui.Entity3D2D(self, Vector(0, 0, 30), Angle(0, 0, 0), 0.1) then
-        
-        local matrix = Matrix()
-        matrix:Translate(Vector(-width / 2, -height / 2, 0))
-        cam.PushModelMatrix(matrix)
+    if imgui.Entity3D2D(self, Vector(width * -0.05, height * -0.05, 35), Angle(0, 90, 0), 0.1) then
 
         surface.SetDrawColor(150, 150, 150, 245)
         surface.DrawRect(0, 0, width, height)
@@ -77,13 +73,11 @@ function UI.EntryPoint(self)
             hackingStage.draw(self)
         end
 
-        if hackingStage and hackingStage.completed then
+        if hackingStage and hackingStage.Completed then
             if hackingStage.completed(self) then
                 self:SetStage(self:GetStage() + 1)
             end
         end
-        
-        cam.PopModelMatrix()
 
         imgui.End3D2D()
     end

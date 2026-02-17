@@ -155,14 +155,20 @@ function imgui.Start3D2D(pos, angles, scale, distanceHide, distanceFadeStart)
 
 	-- calculate mousepos
 	if not vgui.CursorVisible() or vgui.IsHoveringWorld() then
-		local tr = localPlayer:GetEyeTrace()
-		local eyepos = tr.StartPos
-		local eyenormal
+		local eyepos, eyenormal
 
-		if vgui.CursorVisible() and vgui.IsHoveringWorld() then
-			eyenormal = imgui.ScreenToVector(input.GetCursorPos())
+		if ZKsSWHS and ZKsSWHS.HackingView and ZKsSWHS.HackingView.view and ZKsSWHS.HackingView.view.origin then
+			local view = ZKsSWHS.HackingView.view
+			eyepos = view.origin
+			eyenormal = view.angles:Forward()
 		else
-			eyenormal = tr.Normal
+			local tr = localPlayer:GetEyeTrace()
+			eyepos = tr.StartPos
+			if vgui.CursorVisible() and vgui.IsHoveringWorld() then
+				eyenormal = imgui.ScreenToVector(input.GetCursorPos())
+			else
+				eyenormal = tr.Normal
+			end
 		end
 
 		local planeNormal = angles:Up()

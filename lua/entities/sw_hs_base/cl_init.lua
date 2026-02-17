@@ -96,6 +96,10 @@ hook.Add("CalcView", "ZKS.SWHS.HackingView", function(ply, pos, angles, fov)
     view.angles = LerpAngle(frac, g_StartAngles, targetAngles)
     view.fov = fov
 
+    -- Store view for imgui
+    ZKsSWHS.HackingView = ZKsSWHS.HackingView or {}
+    ZKsSWHS.HackingView.view = view
+
     return view
 end)
 

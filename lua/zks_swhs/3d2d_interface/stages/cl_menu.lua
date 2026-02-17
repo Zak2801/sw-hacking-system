@@ -26,7 +26,7 @@ end
 STAGE.Draw = function(self)
     local wasPressed = imgui.xTextButton("Main Menu", "DermaLarge", 0, 0, 500, 500, 3)
     if wasPressed then
-        self.Completed = true
+        self:SetStage(self:GetStage() + 1)
     end
 end
 
