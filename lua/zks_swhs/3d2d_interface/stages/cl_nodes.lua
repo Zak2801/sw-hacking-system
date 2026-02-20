@@ -208,7 +208,7 @@ STAGE.Draw = function(self, w, h)
     if not self.Nodes then return end
     if self.ActiveMinigame then
         if self.CurrentMinigame and self.CurrentMinigame.Draw then
-            self.CurrentMinigame:Draw()
+            self.CurrentMinigame:Draw(self, w, h)
         end
         return
     end

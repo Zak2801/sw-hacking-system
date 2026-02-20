@@ -383,12 +383,6 @@ function UI.EntryPoint(self)
         imgui.ExpandRenderBoundsFromRect(0, 0, width, height)
         UI.DrawHologram(width, height, alpha_mul, scale_mul)
         
-        local terminalColor = Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
-        local font_size = math.max(1, math.floor(30 * scale_mul))
-        local text_x = width / 2 + 0.1 * scale_mul
-        local text_y = height / 2 + (40 - height / 2) * scale_mul
-        draw.SimpleText("Terminal", "DermaDefaultBold", text_x, text_y, terminalColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-
         if self.CurrentMinigame and self.CurrentMinigame.Draw then
             self.CurrentMinigame:Draw(self, width, height)
         elseif hackingStage and hackingStage.draw then
