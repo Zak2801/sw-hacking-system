@@ -20,8 +20,7 @@ local WORD_LIST = {
 --[[
     Aurebesh Fonts
     This needs to be created once, so we'll do it here.
-    The font file should be located in the addon's materials/resource/fonts folder.
-]]
+--]]
 surface.CreateFont("ZKsSWHS.UI.Fonts.Aurebesh", {
     font = "Aurebesh",
     size = 48,
@@ -130,10 +129,10 @@ function MINIGAME:DrawDict(x, y)
     local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     
     -- Background for the dictionary
-    draw.RoundedBox(8, x, y, 230, 300, Color(20, 20, 20, 220))
+    draw.RoundedBox(8, x, y, 230, 300, Color(20, 20, 20, 250))
     draw.SimpleText("Dictionary", "DermaDefaultBold", x + 115, y + 10, color_white, TEXT_ALIGN_CENTER)
 
-    local startX = x + 15
+    local startX = x + 10
     local startY = y + 40
     local lineHeight = 20
 
@@ -165,7 +164,7 @@ function MINIGAME:Draw(ent, w, h)
     -- The hologram itself is drawn in cl_main.
 
     -- Title
-    draw.SimpleText("Translate the Cipher", "DermaLarge", centerX, 50, ZKsSWHS.UI.Colors.Highlight, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    draw.SimpleText("Translate the Cipher", "DermaLarge", centerX, 80, ZKsSWHS.UI.Colors.Highlight, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
     -- Draw the Aurebesh cipher
     draw.SimpleText(self.PlainText, self.AurebeshFont, centerX, 120, ZKsSWHS.UI.Colors.Highlight, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
@@ -180,7 +179,7 @@ function MINIGAME:Draw(ent, w, h)
     self:DrawKeyboard(centerX, 250)
 
     -- Draw the dictionary to the right, outside the main hologram circle but within the same 3d2d context
-    self:DrawDict(w * 1.08, 80)
+    self:DrawDict(w * 0.95, 80)
 
     -- Draw the timer
     local progress = math.Clamp(((CurTime() - self.StartTime) / self.Duration), 0, 1)

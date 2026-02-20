@@ -23,7 +23,7 @@ local NODE_TYPES = {
 local NODE_CONFIG = {
     [NODE_TYPES.ACCESS_POINT] = { color = UI.Colors.Highlight, symbol = "A" },
     [NODE_TYPES.ROUTING] = { color = UI.Colors.Text, symbol = "R" },
-    [NODE_TYPES.ENCRYPTED] = { color = Color(255, 0, 0), symbol = "E" },
+    [NODE_TYPES.ENCRYPTED] = { color = Color(255, 0, 0), symbol = "E", detection_onloss = 20, detection_onwin = 0.3 },
     [NODE_TYPES.VOLATILE] = { color = Color(255, 165, 0), symbol = "V" },
     [NODE_TYPES.SECURITY_RELAY] = { color = Color(255, 0, 255), symbol = "S" },
     [NODE_TYPES.CORE] = { color = UI.Colors.Highlight, symbol = "C" },
@@ -121,11 +121,11 @@ local function GenerateNodes(self, difficulty)
             local x = math.cos(angle) * ringRadius
             local y = math.sin(angle) * ringRadius
             
-            local nodeType = NODE_TYPES.ROUTING
+            local nodeType = NODE_TYPES.ROUTING -- 10%
             local rand = math.random()
-            if rand > 0.8 then nodeType = NODE_TYPES.SECURITY_RELAY
-            elseif rand > 0.4 then nodeType = NODE_TYPES.ENCRYPTED
-            elseif rand > 0.2 then nodeType = NODE_TYPES.VOLATILE
+            if rand > 0.7 then nodeType = NODE_TYPES.SECURITY_RELAY -- 30%
+            elseif rand > 0.3 then nodeType = NODE_TYPES.ENCRYPTED -- 40%
+            elseif rand > 0.1 then nodeType = NODE_TYPES.VOLATILE -- 20%
             end
 
             local newNode = AddNode(x, y, nodeType, r, angle)
@@ -187,13 +187,8 @@ STAGE.Init = function(self)
     self.LastInputTime = 0
 end
 
------------------------------------------------------------------------------
--- Draws the Network Routing stage
--- @param self table The entity
--- @param w number The width of the drawing area
--- @param h number The height of the drawing area
------------------------------------------------------------------------------
-local MINIGAME_COOLDOWN = 2 -- seconds
+local MINIGAME_COOLDOWN = 5 -- seconds
+
 -----------------------------------------------------------------------------
 -- Placeholder Minigames
 -- @param node table The node the minigame is being played on.
@@ -267,6 +262,7 @@ STAGE.Draw = function(self, w, h)
         -- Base fill
         surface.SetDrawColor(10, 10, 10, 200)
         DrawFilledCircle(nodeX, nodeY, nodeRadius)
+        
         -- State border and symbol color
         local symbolColor = color_white
         if node.state == 'captured' then
@@ -289,10 +285,12 @@ STAGE.Draw = function(self, w, h)
             end
         end
         DrawOutlinedCircle(nodeX, nodeY, nodeRadius, 32)
+
         -- Inner symbol
         if node.state ~= 'locked' or node.type == NODE_TYPES.CORE then
             draw.SimpleText(config.symbol, symbolFont, nodeX, nodeY, symbolColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
+
         -- Progress bar for capturing
         if node.state == 'capturing' then
             local progress = (CurTime() - node.capture_start) / CAPTURE_TIME
@@ -310,19 +308,27 @@ STAGE.Draw = function(self, w, h)
             end
         end
 
+        -- Handle input for unlocked nodes
         if node.state ~= 'locked' and node.state ~= 'captured' and self.LastInputTime < CurTime() then
             local is_hovered = imgui.IsHovering(nodeX - nodeRadius, nodeY - nodeRadius, nodeRadius * 2, nodeRadius * 2)
             if node.state == 'unlocked' then
+                -- Handle interaction based on node type, this is for non-minigame nodes
                 if node.type == NODE_TYPES.ROUTING or node.type == NODE_TYPES.VOLATILE or node.type == NODE_TYPES.CORE then
                     if imgui.xButton(nodeX - nodeRadius, nodeY - nodeRadius, nodeRadius * 2, nodeRadius * 2, 0) then
                         if node.type == NODE_TYPES.CORE then
                             node.state = 'captured'
+                            STAGE.Completed(self)
+                        elseif node.type == NODE_TYPES.VOLATILE then
+                            self:SetSignalStability(self:GetSignalStability() * math.Rand(0.7, 0.9)) -- Volatile makes signal worse on capture
+                            node.state = 'capturing'
+                            node.capture_start = CurTime()
                         else
                             node.state = 'capturing'
                             node.capture_start = CurTime()
                         end
                         self.LastInputTime = CurTime() + 0.5
                     end
+                -- Minigame nodes interaction
                 elseif MINIGAMES[node.type] then
                     if is_hovered and input.IsKeyDown(KEY_E) then
                         local minigameName = table.Random(MINIGAMES[node.type])
@@ -338,6 +344,9 @@ STAGE.Draw = function(self, w, h)
                                 self.ActiveMinigame = false
                                 self.CurrentMinigame = nil
                                 if success then
+                                    if NODE_CONFIG[node.type] and NODE_CONFIG[node.type].detection_onwin then
+                                        self:SetDetectionLevel(self:GetDetectionLevel() * NODE_CONFIG[node.type].detection_onwin)
+                                    end
                                     node.state = 'captured'
                                     for _, connId in ipairs(node.connections) do
                                         if nodes[connId] and nodes[connId].state == 'locked' then
@@ -345,6 +354,9 @@ STAGE.Draw = function(self, w, h)
                                         end
                                     end
                                 else
+                                    if NODE_CONFIG[node.type] and NODE_CONFIG[node.type].detection_onloss then
+                                        self:SetDetectionLevel(self:GetDetectionLevel() + NODE_CONFIG[node.type].detection_onloss)
+                                    end
                                     node.state = 'cooldown'
                                     node.cooldown_end = CurTime() + MINIGAME_COOLDOWN
                                 end
@@ -355,6 +367,8 @@ STAGE.Draw = function(self, w, h)
                     end
                 end
             end
+
+            -- Draw interaction prompt
             if is_hovered then
                 local prompt = ""
                 local can_interact = node.state == 'unlocked'
@@ -387,6 +401,7 @@ STAGE.Completed = function(self)
     if not self.Nodes then return false end
     for _, node in pairs(self.Nodes) do
         if node.type == NODE_TYPES.CORE and node.state == 'captured' then
+            self:SetStage(self:GetStage() + 1)
             return true
         end
     end

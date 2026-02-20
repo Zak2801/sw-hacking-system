@@ -37,7 +37,7 @@ STAGE.Draw = function(ent, w, h)
     local terminalColor = Color(ZKsSWHS.UI.Colors.Highlight.r, ZKsSWHS.UI.Colors.Highlight.g, ZKsSWHS.UI.Colors.Highlight.b, ZKsSWHS.UI.Colors.Highlight.a * alpha_mul)
     local wasPressed = imgui.xTextButton("Start Breach", "DermaLarge", w / 2 - btnWidth / 2, h / 2 - btnHeight / 2, btnWidth, btnHeight, 3, terminalColor, ZKsSWHS.UI.Colors.Highlight_hover)
     if wasPressed then
-        ent:SetStage(ent:GetStage() + 1)
+        ent:SetStage(ent:GetStage() + 2) -- Skip the tutorial stage for now (DEBUG)
         ZKsSWHS.UI.InfoPanelText = ""
     end
 end
