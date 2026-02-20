@@ -15,7 +15,7 @@ util.AddNetworkString("ZKS.SWHS.StartHack")
 -- @return nil
 -----------------------------------------------------------------------------
 function ENT:Initialize()
-    self:SetModel("models/props_silo/consolepanelloadingbay.mdl")
+    self:SetModel("models/ace/sw/rh/cgi_console_08.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)

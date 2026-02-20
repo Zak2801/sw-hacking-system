@@ -213,8 +213,6 @@ STAGE.Draw = function(self, w, h)
         return
     end
 
-    ZKsSWHS.UI.InfoPanelText = ""
-
     local centerX, centerY = w / 2, h / 2
     local radius = (math.min(w, h) / 2 - 50)
     local nodes = self.Nodes

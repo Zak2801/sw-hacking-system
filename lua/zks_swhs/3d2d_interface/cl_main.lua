@@ -123,12 +123,20 @@ local function DrawWrappedText(text, font, x, y, color, xalign, yalign, wrapWidt
     end
 end
 
+-----------------------------------------------------------------------------
+-- Draws the box that displays the current stage of the hack.
+-- @param w number The width of the panel.
+-- @param h number The height of the panel.
+-- @param title string The title to display.
+-- @param alpha_mul number The alpha multiplier.
+-- @param scale_mul number The scale multiplier.
+-----------------------------------------------------------------------------
 function UI.DrawStageBox(w, h, title, alpha_mul, scale_mul)
     scale_mul = scale_mul or 1
     alpha_mul = alpha_mul or 1
     local panel_cx, panel_cy = w / 2, h / 2
-    local orig_boxW, orig_boxH = w * 0.3, 60
-    local orig_x, orig_y = -w * 0.2, h * 0.1
+    local orig_boxW, orig_boxH = w, 60
+    local orig_x, orig_y = 0, 0
     local box_cx = orig_x + orig_boxW / 2
     local box_cy = orig_y + orig_boxH / 2
     local box_cx_rel = box_cx - panel_cx
@@ -149,12 +157,23 @@ function UI.DrawStageBox(w, h, title, alpha_mul, scale_mul)
     draw.SimpleText(title or "Stage", "DermaDefaultBold", new_box_cx, new_box_cy, titleColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end
 
+-----------------------------------------------------------------------------
+-- Draws a box with a title and a value.
+-- @param w number The width of the panel.
+-- @param h number The height of the panel.
+-- @param title string The title to display.
+-- @param value string The value to display.
+-- @param color Color The color of the value.
+-- @param y_offset number The y offset of the box.
+-- @param alpha_mul number The alpha multiplier.
+-- @param scale_mul number The scale multiplier.
+-----------------------------------------------------------------------------
 function UI.DrawInfoBox(w, h, title, value, color, y_offset, alpha_mul, scale_mul)
     scale_mul = scale_mul or 1
     alpha_mul = alpha_mul or 1
     local panel_cx, panel_cy = w / 2, h / 2
-    local orig_boxW, orig_boxH = w * 0.3, 40
-    local orig_x, orig_y = -w * 0.2, h * 0.1 + y_offset
+    local orig_boxW, orig_boxH = w, 40
+    local orig_x, orig_y = 0, h * 0.1 + y_offset
     local box_cx = orig_x + orig_boxW / 2
     local box_cy = orig_y + orig_boxH / 2
     local box_cx_rel = box_cx - panel_cx
@@ -178,13 +197,20 @@ function UI.DrawInfoBox(w, h, title, value, color, y_offset, alpha_mul, scale_mu
     draw.SimpleText(value, "DermaDefaultBold", new_box_cx + boxW * 0.25, new_box_cy, value_color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end
 
+-----------------------------------------------------------------------------
+-- Draws the info panel.
+-- @param w number The width of the panel.
+-- @param h number The height of the panel.
+-- @param alpha_mul number The alpha multiplier.
+-- @param scale_mul number The scale multiplier.
+-----------------------------------------------------------------------------
 function UI.DrawInfoPanel(w, h, alpha_mul, scale_mul)
     scale_mul = scale_mul or 1
     alpha_mul = alpha_mul or 1
     local panel_cx, panel_cy = w / 2, h / 2
-    local orig_boxW, orig_boxH = w * 0.4, h * 0.5
-    local orig_x, orig_y = w * 0.3, h * 0.1
-    local box_cx = orig_x + orig_boxW * 2.1
+    local orig_boxW, orig_boxH = w, h
+    local orig_x, orig_y = 0, 0
+    local box_cx = orig_x + orig_boxW / 2
     local box_cy = orig_y + orig_boxH / 2
     local box_cx_rel = box_cx - panel_cx
     local box_cy_rel = box_cy - panel_cy
@@ -269,11 +295,18 @@ function UI.DrawHologram(width, height, alpha_mul, scale_mul)
     end
 end
 
+g_Drawing3D2D = false
+-----------------------------------------------------------------------------
+-- The main entry point for drawing the 3D2D UI.
+-- @param self table The entity to draw the UI on.
+-----------------------------------------------------------------------------
 function UI.EntryPoint(self)
     if not imgui then
         print("[ZKS.SWHS] Warning: 'imgui' is not available. Cannot draw 3D2D UI.")
         return
     end
+
+    g_Drawing3D2D = true
 
     local width, height = 700, 600
     local rad = math.min(width, height) / 2 - 10
@@ -304,10 +337,12 @@ function UI.EntryPoint(self)
         end
     end
 
-    -- Draw a 3D2D panel attached to the entity.
-    if imgui.Entity3D2D(self, Vector(bMax.x + 5, -bMax.y - 2, bMax.z * 3), Angle(0, 90, 100), 0.1) then
-        UI.DrawHologram(width, height, alpha_mul, scale_mul)
-        UI.DrawStageBox(width, height, hackingStage and hackingStage.name or "Unknown Stage", alpha_mul, scale_mul)
+    local leftBoxW, leftBoxH = 260, 320
+
+    if imgui.Entity3D2D(self, Vector(-10, -58, 44), Angle(0, 90, 40), 0.1) then
+        surface.SetDrawColor(0, 0, 0, 150 * alpha_mul)
+        surface.DrawRect(0, 0, leftBoxW, leftBoxH)
+        UI.DrawStageBox(leftBoxW, leftBoxH, hackingStage and hackingStage.name or "Unknown Stage", alpha_mul, scale_mul)
 
         local detectionLevel = self:GetDetectionLevel() -- 0-100
         local signalStability = self:GetSignalStability() -- 0-100
@@ -319,7 +354,7 @@ function UI.EntryPoint(self)
         if detectionLevel < 35 then
             detection_color = Color(0, 255, 0)
         end
-        UI.DrawInfoBox(width, height, "Detection", detectionLevel .. "%", detection_color, 70, alpha_mul, scale_mul)
+        UI.DrawInfoBox(leftBoxW, leftBoxH, "Detection", detectionLevel .. "%", detection_color, 70, alpha_mul, scale_mul)
         -- Signal Stability
         local signal_color = Color(0, 255, 0)
         if signalStability < 75 then
@@ -328,9 +363,23 @@ function UI.EntryPoint(self)
         if signalStability < 35 then
             signal_color = Color(255, 0, 0)
         end
-        UI.DrawInfoBox(width, height, "Signal", signalStability .. "%", signal_color, 120, alpha_mul, scale_mul)
+        UI.DrawInfoBox(leftBoxW, leftBoxH, "Signal", signalStability .. "%", signal_color, 120, alpha_mul, scale_mul)
 
-        UI.DrawInfoPanel(width, height, alpha_mul, scale_mul)
+
+        imgui.End3D2D()
+    end
+
+    if imgui.Entity3D2D(self, Vector(-10, -13, 44), Angle(0, 90, 40), 0.1) then
+        surface.SetDrawColor(0, 0, 0, 150 * alpha_mul)
+        surface.DrawRect(0, 0, leftBoxW, leftBoxH)
+        UI.DrawInfoPanel(leftBoxW, leftBoxH, alpha_mul, scale_mul)
+        imgui.End3D2D()
+    end
+
+    -- Draw a 3D2D panel attached to the.
+    if imgui.Entity3D2D(self, Vector(bMax.x - 5, -bMax.y + 28, bMax.z * 2.5), Angle(0, 90, 100), 0.1) then
+        UI.DrawHologram(width, height, alpha_mul, scale_mul)
+        
         local terminalColor = Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
         local font_size = math.max(1, math.floor(30 * scale_mul))
         local text_x = width / 2 + 0.1 * scale_mul

@@ -51,11 +51,8 @@ end)
 --      Hooks
 --===========================================================================--
 
-
 -----------------------------------------------------------------------------
--- @name ZKS.SWHS.HackingClose
--- @hook Think
--- @brief Checks for the condition to end the hacking sequence (pressing 'R').
+-- Ends the hacking sequence.
 -----------------------------------------------------------------------------
 local function EndHack()
     if not g_IsHacking then return end
@@ -68,6 +65,7 @@ local function EndHack()
     g_HackingEnt = nil
     ZKsSWHS.UI.HackStartTime = nil
     ZKsSWHS.UI.CurrentStage = -1
+    g_Drawing3D2D = false
 end
 
 -----------------------------------------------------------------------------
@@ -104,7 +102,6 @@ hook.Add("Think", "ZKS.SWHS.HackingThink", function()
     end
 end)
 
-
 -----------------------------------------------------------------------------
 -- Called when the entity is initialized on the client.
 -- @return nil
@@ -120,7 +117,7 @@ end
 -- @return nil
 -----------------------------------------------------------------------------
 function ENT:DrawTranslucent(flags)
-    self:Draw(flags)
+    self:DrawModel(flags)
     if not g_IsHacking then return end
     if g_HackingEnt ~= self then return end
 
