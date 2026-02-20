@@ -23,7 +23,7 @@ UI.CurrentStage = -1
 UI.InfoPanelText = ""
 
 UI.Colors = {
-    Background = Color(0, 0, 0, 200),
+    Background = Color(0, 0, 0, 250),
     Border = Color(65, 185, 215, 200),
     Text = Color(200, 255, 200),
     Highlight = Color(255, 130, 0),
@@ -340,6 +340,7 @@ function UI.EntryPoint(self)
     local leftBoxW, leftBoxH = 260, 320
 
     if imgui.Entity3D2D(self, Vector(-10, -58, 44), Angle(0, 90, 40), 0.1) then
+        imgui.ExpandRenderBoundsFromRect(0, 0, leftBoxW, leftBoxH)
         surface.SetDrawColor(0, 0, 0, 150 * alpha_mul)
         surface.DrawRect(0, 0, leftBoxW, leftBoxH)
         UI.DrawStageBox(leftBoxW, leftBoxH, hackingStage and hackingStage.name or "Unknown Stage", alpha_mul, scale_mul)
@@ -370,6 +371,7 @@ function UI.EntryPoint(self)
     end
 
     if imgui.Entity3D2D(self, Vector(-10, -13, 44), Angle(0, 90, 40), 0.1) then
+        imgui.ExpandRenderBoundsFromRect(0, 0, leftBoxW, leftBoxH)
         surface.SetDrawColor(0, 0, 0, 150 * alpha_mul)
         surface.DrawRect(0, 0, leftBoxW, leftBoxH)
         UI.DrawInfoPanel(leftBoxW, leftBoxH, alpha_mul, scale_mul)
@@ -378,6 +380,7 @@ function UI.EntryPoint(self)
 
     -- Draw a 3D2D panel attached to the.
     if imgui.Entity3D2D(self, Vector(bMax.x - 30, -bMax.y + 28, bMax.z * 2.3), Angle(0, 90, 110), 0.1) then
+        imgui.ExpandRenderBoundsFromRect(0, 0, width, height)
         UI.DrawHologram(width, height, alpha_mul, scale_mul)
         
         local terminalColor = Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
