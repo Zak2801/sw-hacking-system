@@ -57,7 +57,8 @@ function MINIGAME:Start(node, callback)
     self.Callback = callback
     self.StartTime = CurTime()
     self.PlainText = GenerateRandomWord()
-    print("[ZKS.SWHS] Cipher Minigame started with word: " .. self.PlainText)
+    LocalPlayer():ChatPrint("Cipher Minigame Started! Translate the Aurebesh cipher to English.")
+    LocalPlayer():ChatPrint("DEBUG: The word to translate is '" .. self.PlainText .. "'") -- Remove this line in production!
     self.PlayerInput = ""
     self.Finished = false
 
