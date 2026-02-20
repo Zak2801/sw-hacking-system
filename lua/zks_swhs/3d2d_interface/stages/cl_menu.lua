@@ -4,6 +4,8 @@
   Main menu stage
 ---------------------------------------------------------------------------]]
 
+ZKsSWHS = ZKsSWHS or {}
+ZKsSWHS.UI = ZKsSWHS.UI or {}
 local Stages = ZKsSWHS.UI.Stages
 
 
@@ -19,6 +21,7 @@ STAGE.Name = "Main Menu"
 STAGE.Init = function(ent)
     STAGE.init = CurTime()
     STAGE.Completed = false
+    ZKsSWHS.UI.InfoPanelText = "Hacking System Interface"
 end
 
 -----------------------------------------------------------------------------
@@ -34,7 +37,8 @@ STAGE.Draw = function(ent, w, h)
     local terminalColor = Color(ZKsSWHS.UI.Colors.Highlight.r, ZKsSWHS.UI.Colors.Highlight.g, ZKsSWHS.UI.Colors.Highlight.b, ZKsSWHS.UI.Colors.Highlight.a * alpha_mul)
     local wasPressed = imgui.xTextButton("Start Breach", "DermaLarge", w / 2 - btnWidth / 2, h / 2 - btnHeight / 2, btnWidth, btnHeight, 3, terminalColor, ZKsSWHS.UI.Colors.Highlight_hover)
     if wasPressed then
-        ent:SetStage(ent:GetStage() + 2)
+        ent:SetStage(ent:GetStage() + 1)
+        ZKsSWHS.UI.InfoPanelText = ""
     end
 end
 

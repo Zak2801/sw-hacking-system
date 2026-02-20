@@ -4,6 +4,8 @@
   Establish Unplink stage
 ---------------------------------------------------------------------------]]
 
+ZKsSWHS = ZKsSWHS or {}
+ZKsSWHS.UI = ZKsSWHS.UI or {}
 local Stages = ZKsSWHS.UI.Stages
 
 
@@ -37,6 +39,8 @@ STAGE.Init = function(self)
         amp = 1,
         phase = 0.01
     }
+
+    ZKsSWHS.UI.InfoPanelText = "Align your signal to the target waveform. Use [LEFT SHIFT] to switch parameters, and [UP/DOWN] to adjust."
 end
 
 -- Colors
@@ -173,9 +177,7 @@ STAGE.Draw = function(self, w, h)
 
     if match_freq and match_amp and match_phase then
         draw.SimpleText("SIGNAL MATCHED", "DermaLarge", centerX, 100, Color(0,255,0), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-        net.Start("ZKsSWHS_AdvanceStage")
-        net.WriteEntity(self)
-        net.SendToServer()
+        self:SetStage(self:GetStage() + 1)
     end
 end
 
