@@ -377,7 +377,7 @@ function UI.EntryPoint(self)
     end
 
     -- Draw a 3D2D panel attached to the.
-    if imgui.Entity3D2D(self, Vector(bMax.x - 5, -bMax.y + 28, bMax.z * 2.5), Angle(0, 90, 100), 0.1) then
+    if imgui.Entity3D2D(self, Vector(bMax.x - 30, -bMax.y + 28, bMax.z * 2.3), Angle(0, 90, 110), 0.1) then
         UI.DrawHologram(width, height, alpha_mul, scale_mul)
         
         local terminalColor = Color(UI.Colors.Text.r, UI.Colors.Text.g, UI.Colors.Text.b, UI.Colors.Text.a * alpha_mul)
