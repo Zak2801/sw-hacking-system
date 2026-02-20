@@ -360,11 +360,14 @@ STAGE.Draw = function(self, w, h)
                 local can_interact = node.state == 'unlocked'
                 if can_interact then
                     if node.type == NODE_TYPES.ROUTING or node.type == NODE_TYPES.VOLATILE then
+                        ZKsSWHS.UI.InfoPanelText = "This node is a " .. (node.type == NODE_TYPES.ROUTING and "routing node" or "volatile node") .. ". Interact to capture it and unlock connected nodes."
                         prompt = "[LMB] Capture"
                     elseif MINIGAMES[node.type] then
                         prompt = "[E] " .. (node.type == NODE_TYPES.ENCRYPTED and "Decrypt" or "Bypass")
+                        ZKsSWHS.UI.InfoPanelText = "This node is " .. (node.type == NODE_TYPES.ENCRYPTED and "encrypted" or "protected by a security relay") .. ". Interact to attempt to " .. (node.type == NODE_TYPES.ENCRYPTED and "decrypt it" or "bypass the security relay") .. "."
                     elseif node.type == NODE_TYPES.CORE then
                         prompt = "[LMB] Capture Core"
+                        ZKsSWHS.UI.InfoPanelText = "This is the core node. Capture it to complete the breach."
                     end
                 end
                 if prompt ~= "" then
