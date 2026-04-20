@@ -295,6 +295,20 @@ function UI.DrawHologram(width, height, alpha_mul, scale_mul)
     end
 end
 
+-----------------------------------------------------------------------------
+-- Sends an update to the server about hacking status changes.
+-- @param ent Entity The entity being hacked.
+-- @param detectionAdd number The amount to add to detection level.
+-- @param signalAdd number The amount to add to signal stability.
+-----------------------------------------------------------------------------
+function UI.UpdateStatus(ent, detectionAdd, signalAdd)
+    net.Start("ZKS.SWHS.UpdateStatus")
+    net.WriteEntity(ent)
+    net.WriteInt(detectionAdd or 0, 16)
+    net.WriteInt(signalAdd or 0, 16)
+    net.SendToServer()
+end
+
 g_Drawing3D2D = false
 -----------------------------------------------------------------------------
 -- The main entry point for drawing the 3D2D UI.
@@ -304,6 +318,43 @@ function UI.EntryPoint(self)
     if not imgui then
         print("[ZKS.SWHS] Warning: 'imgui' is not available. Cannot draw 3D2D UI.")
         return
+    end
+
+    local signalStability = self:GetSignalStability()
+    local signal_alpha = 1
+
+    -- Signal Interference Logic
+    if signalStability < 50 then
+        -- Random glitching: the lower the signal, the more frequent the blank-outs
+        local glitchChance = (50 - signalStability) / 50 -- 0.0 to 0.8
+        if math.Rand(0, 1) < (glitchChance * 0.3) then
+            -- Draw static instead of the UI
+            if imgui.Entity3D2D(self, Vector(0, 0, 44), Angle(0, 90, 40), 0.1) then
+                local w, h = 700, 600
+                surface.SetDrawColor(0, 0, 0, 200)
+                surface.DrawRect(0, 0, w, h)
+                
+                -- Draw static dots
+                for i = 1, 100 do
+                    surface.SetDrawColor(math.random(100, 255), math.random(100, 255), math.random(100, 255), 100)
+                    surface.DrawRect(math.random(0, w), math.random(0, h), 2, 2)
+                end
+
+                draw.SimpleText("SIGNAL INTERFERENCE DETECTED", "DermaLarge", w/2, h/2, Color(255, 0, 0), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                imgui.End3D2D()
+            end
+            return -- Skip normal drawing
+        end
+
+        -- Flickering alpha
+        if math.Rand(0, 1) < 0.1 then
+            signal_alpha = math.Rand(0.2, 0.8)
+        end
+    end
+
+    -- Critical Shutdown Warning
+    if signalStability < 20 then
+        ZKsSWHS.UI.InfoPanelText = "!!! CRITICAL SIGNAL LOSS !!!\n\nEMERGENCY SHUTDOWN IMMINENT. STABILIZE SIGNAL IMMEDIATELY OR SYSTEM WILL RESET."
     end
 
     g_Drawing3D2D = true

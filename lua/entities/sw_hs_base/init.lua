@@ -55,10 +55,67 @@ function ENT:StartHack(ply)
     if self:GetState() ~= 0 then return end -- Only allow hacking if currently idle
     self:SetState(1) -- Set to hacking state
     self:SetStage(0) -- Set to first stage: Establish Uplink
+    self.CurrentHacker = ply
 
     hook.Run("ZKS.SWHS.OnHackStarted", self, ply)
 
     net.Start("ZKS.SWHS.StartHack")
     net.WriteEntity(self)
     net.Send(ply)
+end
+
+-----------------------------------------------------------------------------
+-- Resets the entity state
+-----------------------------------------------------------------------------
+function ENT:ResetHack()
+    self:SetState(0)
+    self:SetStage(0)
+    self:SetDetectionLevel(math.random(0, 5))
+    self:SetSignalStability(math.random(90, 100))
+    self.CurrentHacker = nil
+end
+
+-----------------------------------------------------------------------------
+-- Think hook for handling consequences
+-----------------------------------------------------------------------------
+function ENT:Think()
+    if self:GetState() ~= 1 then return end
+    if not IsValid(self.CurrentHacker) then 
+        self:ResetHack()
+        return 
+    end
+
+    local detection = self:GetDetectionLevel()
+    local signal = self:GetSignalStability()
+
+    -- 1. Signal Stability Reset (< 10%)
+    if signal < 10 then
+        self:ResetHack()
+        -- You might want to play a sound or net message here for "CRITICAL FAILURE"
+        return
+    end
+
+    -- 2. Detection Consequences (NPC Targeting)
+    if detection > 50 then
+        local searchDist = (detection / 100) * 2000 -- Scaling distance: 1000 to 2000 units
+        local entities = ents.FindInSphere(self:GetPos(), searchDist)
+
+        for _, npc in ipairs(entities) do
+            if npc:IsNPC() and npc:GetClass() ~= "npc_bullseye" then -- Basic check for NPCs
+                local rel = npc:Disposition(self.CurrentHacker)
+                if rel == D_HT or rel == D_FR then -- Only hostile/frightened NPCs
+                    npc:SetEnemy(self.CurrentHacker)
+                    npc:UpdateEnemyMemory(self.CurrentHacker, self.CurrentHacker:GetPos())
+
+                    -- Some NPCs need a schedule to move
+                    if npc.SetSchedule then
+                        npc:SetSchedule(SCHED_CHASE_ENEMY)
+                    end
+                end
+            end
+        end
+    end
+
+    self:NextThink(CurTime() + 1) -- Run once a second
+    return true
 end

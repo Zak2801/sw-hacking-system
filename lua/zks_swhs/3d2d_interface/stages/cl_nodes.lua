@@ -21,13 +21,98 @@ local NODE_TYPES = {
 }
 
 local NODE_CONFIG = {
-    [NODE_TYPES.ACCESS_POINT] = { color = UI.Colors.Highlight, symbol = "A" },
-    [NODE_TYPES.ROUTING] = { color = UI.Colors.Text, symbol = "R" },
-    [NODE_TYPES.ENCRYPTED] = { color = Color(255, 0, 0), symbol = "E", detection_onloss = 20, detection_onwin = 0.3 },
-    [NODE_TYPES.VOLATILE] = { color = Color(255, 165, 0), symbol = "V" },
-    [NODE_TYPES.SECURITY_RELAY] = { color = Color(255, 0, 255), symbol = "S" },
-    [NODE_TYPES.CORE] = { color = UI.Colors.Highlight, symbol = "C" },
+    [NODE_TYPES.ACCESS_POINT] = { 
+        name = "Access Point",
+        description = "Initial breach point. Stable uplink established. Provides the gateway into the local subnet.",
+        color = UI.Colors.Highlight, 
+        symbol = "A" 
+    },
+    [NODE_TYPES.ROUTING] = { 
+        name = "Routing Node",
+        description = "Standard data junction. Used to map internal network paths and bypass localized firewalls.",
+        color = UI.Colors.Text, 
+        symbol = "R" 
+    },
+    [NODE_TYPES.ENCRYPTED] = { 
+        name = "Encrypted Data Cluster",
+        description = "A cluster of data protected by a bit-scrambler. Attempting to force access is risky and may result in a back-trace.",
+        color = Color(255, 0, 0), 
+        symbol = "E", 
+        detection_onloss = 15, 
+        signal_onloss = -10 
+    },
+    [NODE_TYPES.VOLATILE] = { 
+        name = "Volatile Coupling",
+        description = "An unstable energy coupling. Capturing it creates a power surge that is likely to be flagged by automated security monitors.",
+        color = Color(255, 165, 0), 
+        symbol = "V", 
+        detection_oncapture = 10 
+    },
+    [NODE_TYPES.SECURITY_RELAY] = { 
+        name = "Security Relay",
+        description = "Advanced firewall sub-processor. Bypassing this relay significantly cleans up the signal interference, but failure will trigger an immediate high-priority alert.",
+        color = Color(255, 0, 255), 
+        symbol = "S", 
+        detection_onloss = 30,
+        signal_onwin = 15 
+    },
+    [NODE_TYPES.CORE] = { 
+        name = "Mainframe Core",
+        description = "The central logic hub of the system. Complete control is achieved once this node is breached.",
+        color = UI.Colors.Highlight, 
+        symbol = "C" 
+    },
 }
+
+-----------------------------------------------------------------------------
+-- Formats the information panel text for a node.
+-- @param node table The node data.
+-- @return string The formatted text.
+-----------------------------------------------------------------------------
+local function FormatNodeInfo(node)
+    local config = NODE_CONFIG[node.type]
+    if not config then return "Unknown Node Type" end
+
+    local text = string.upper(config.name) .. "\n\n"
+    text = text .. config.description .. "\n\n"
+
+    local tech = "TECHNICAL SPECS:\n"
+    local hasTech = false
+
+    if config.detection_oncapture then
+        tech = tech .. "- On Capture: +" .. config.detection_oncapture .. "% Detection\n"
+        hasTech = true
+    end
+
+    if config.detection_onloss then
+        tech = tech .. "- On Failure: +" .. config.detection_onloss .. "% Detection\n"
+        hasTech = true
+    end
+
+    if config.signal_onwin then
+        tech = tech .. "- On Success: +" .. config.signal_onwin .. "% Signal\n"
+        hasTech = true
+    end
+
+    if config.signal_onloss then
+        tech = tech .. "- On Failure: " .. config.signal_onloss .. "% Signal\n"
+        hasTech = true
+    end
+
+    if node.state == "captured" then
+        text = text .. "STATUS: SECURED\n"
+    elseif node.state == "cooldown" then
+        text = text .. "STATUS: LOCKED (TRACING...)\n"
+    else
+        text = text .. "STATUS: READY\n"
+    end
+
+    if hasTech then
+        text = text .. "\n" .. tech
+    end
+
+    return text
+end
 
 local CAPTURE_TIME = 5 -- seconds
 
@@ -121,11 +206,21 @@ local function GenerateNodes(self, difficulty)
             local x = math.cos(angle) * ringRadius
             local y = math.sin(angle) * ringRadius
             
-            local nodeType = NODE_TYPES.ROUTING -- 10%
+            local nodeType = NODE_TYPES.ROUTING 
             local rand = math.random()
-            if rand > 0.7 then nodeType = NODE_TYPES.SECURITY_RELAY -- 30%
-            elseif rand > 0.3 then nodeType = NODE_TYPES.ENCRYPTED -- 40%
-            elseif rand > 0.1 then nodeType = NODE_TYPES.VOLATILE -- 20%
+            
+            -- Prevent easy path to core (Ring 1 nodes should be Encrypted or Security Relays mostly)
+            if r == 1 then
+                if math.random() > 0.5 then 
+                    nodeType = NODE_TYPES.SECURITY_RELAY 
+                else 
+                    nodeType = NODE_TYPES.ENCRYPTED 
+                end
+            else
+                if rand > 0.7 then nodeType = NODE_TYPES.SECURITY_RELAY 
+                elseif rand > 0.3 then nodeType = NODE_TYPES.ENCRYPTED 
+                elseif rand > 0.1 then nodeType = NODE_TYPES.VOLATILE 
+                end
             end
 
             local newNode = AddNode(x, y, nodeType, r, angle)
@@ -296,6 +391,12 @@ STAGE.Draw = function(self, w, h)
             local progress = (CurTime() - node.capture_start) / CAPTURE_TIME
             if progress >= 1 then
                 node.state = 'captured'
+                
+                -- Handle On Capture effects
+                if config and config.detection_oncapture then
+                    UI.UpdateStatus(self, config.detection_oncapture, 0)
+                end
+
                 for _, connId in ipairs(node.connections) do
                     if nodes[connId] and nodes[connId].state == 'locked' then
                         nodes[connId].state = 'unlocked'
@@ -318,10 +419,6 @@ STAGE.Draw = function(self, w, h)
                         if node.type == NODE_TYPES.CORE then
                             node.state = 'captured'
                             STAGE.Completed(self)
-                        elseif node.type == NODE_TYPES.VOLATILE then
-                            self:SetSignalStability(self:GetSignalStability() * math.Rand(0.7, 0.9)) -- Volatile makes signal worse on capture
-                            node.state = 'capturing'
-                            node.capture_start = CurTime()
                         else
                             node.state = 'capturing'
                             node.capture_start = CurTime()
@@ -344,8 +441,8 @@ STAGE.Draw = function(self, w, h)
                                 self.ActiveMinigame = false
                                 self.CurrentMinigame = nil
                                 if success then
-                                    if NODE_CONFIG[node.type] and NODE_CONFIG[node.type].detection_onwin then
-                                        self:SetDetectionLevel(self:GetDetectionLevel() * NODE_CONFIG[node.type].detection_onwin)
+                                    if config then
+                                        UI.UpdateStatus(self, 0, config.signal_onwin or 0)
                                     end
                                     node.state = 'captured'
                                     for _, connId in ipairs(node.connections) do
@@ -354,8 +451,8 @@ STAGE.Draw = function(self, w, h)
                                         end
                                     end
                                 else
-                                    if NODE_CONFIG[node.type] and NODE_CONFIG[node.type].detection_onloss then
-                                        self:SetDetectionLevel(self:GetDetectionLevel() + NODE_CONFIG[node.type].detection_onloss)
+                                    if config then
+                                        UI.UpdateStatus(self, config.detection_onloss or 0, config.signal_onloss or 0)
                                     end
                                     node.state = 'cooldown'
                                     node.cooldown_end = CurTime() + MINIGAME_COOLDOWN
@@ -372,16 +469,17 @@ STAGE.Draw = function(self, w, h)
             if is_hovered then
                 local prompt = ""
                 local can_interact = node.state == 'unlocked'
+                
+                -- Always update the info panel text when hovering, with detailed info
+                ZKsSWHS.UI.InfoPanelText = FormatNodeInfo(node)
+
                 if can_interact then
                     if node.type == NODE_TYPES.ROUTING or node.type == NODE_TYPES.VOLATILE then
-                        ZKsSWHS.UI.InfoPanelText = "This node is a " .. (node.type == NODE_TYPES.ROUTING and "routing node" or "volatile node") .. ". Interact to capture it and unlock connected nodes."
                         prompt = "[LMB] Capture"
                     elseif MINIGAMES[node.type] then
                         prompt = "[E] " .. (node.type == NODE_TYPES.ENCRYPTED and "Decrypt" or "Bypass")
-                        ZKsSWHS.UI.InfoPanelText = "This node is " .. (node.type == NODE_TYPES.ENCRYPTED and "encrypted" or "protected by a security relay") .. ". Interact to attempt to " .. (node.type == NODE_TYPES.ENCRYPTED and "decrypt it" or "bypass the security relay") .. "."
                     elseif node.type == NODE_TYPES.CORE then
                         prompt = "[LMB] Capture Core"
-                        ZKsSWHS.UI.InfoPanelText = "This is the core node. Capture it to complete the breach."
                     end
                 end
                 if prompt ~= "" then
